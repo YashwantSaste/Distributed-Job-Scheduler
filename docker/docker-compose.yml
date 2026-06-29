@@ -1,0 +1,178 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: scheduler-postgres
+    environment:
+      POSTGRES_DB: scheduler
+      POSTGRES_USER: scheduler
+      POSTGRES_PASSWORD: scheduler
+    ports:
+      - "5432:5432"
+    volumes:
+      - scheduler-postgres-data:/var/lib/postgresql/data
+      - ../database/src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scheduler -d scheduler"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: scheduler-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - scheduler-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.7.1
+    container_name: scheduler-kafka
+    hostname: kafka
+
+    ports:
+      - "9092:9092"
+
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: api-server
+        MAIN_CLASS: com.project.scheduler.api.ApiServerApplication
+    environment:
+      HTTP_PORT: 8080
+      DB_URL: jdbc:postgresql://postgres:5432/scheduler
+      DB_USERNAME: scheduler
+      DB_PASSWORD: scheduler
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      LOG_LEVEL: INFO
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  job-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: job-service
+        MAIN_CLASS: com.project.scheduler.job.JobServiceApplication
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  search-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: search-service
+        MAIN_CLASS: com.project.scheduler.search.SearchServiceApplication
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  watcher-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: watcher-service
+        MAIN_CLASS: com.project.scheduler.watcher.WatcherServiceApplication
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/scheduler
+      DB_USERNAME: scheduler
+      DB_PASSWORD: scheduler
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  consumer-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: consumer-service
+        MAIN_CLASS: com.project.scheduler.consumer.ConsumerServiceApplication
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  executor-service:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.jvm
+      args:
+        MODULE: executor-service
+        MAIN_CLASS: com.project.scheduler.executor.ExecutorServiceApplication
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/scheduler
+      DB_USERNAME: scheduler
+      DB_PASSWORD: scheduler
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+volumes:
+  scheduler-postgres-data:
+  scheduler-redis-data:

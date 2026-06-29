@@ -1,0 +1,27 @@
+FROM maven:3.9.8-eclipse-temurin-21 AS build
+
+ARG MODULE
+WORKDIR /workspace
+COPY pom.xml pom.xml
+COPY common common
+COPY scheduler-core scheduler-core
+COPY database database
+COPY kafka kafka
+COPY redis redis
+COPY api-server api-server
+COPY job-service job-service
+COPY search-service search-service
+COPY watcher-service watcher-service
+COPY consumer-service consumer-service
+COPY executor-service executor-service
+RUN mvn -q -pl ${MODULE} -am package dependency:copy-dependencies -DincludeScope=runtime -DskipTests
+
+FROM eclipse-temurin:21-jre
+ARG MODULE
+ARG MAIN_CLASS
+ENV MODULE=${MODULE}
+ENV MAIN_CLASS=${MAIN_CLASS}
+WORKDIR /app
+COPY --from=build /workspace/${MODULE}/target /app/target
+EXPOSE 8080
+ENTRYPOINT ["sh", "-c", "java -cp '/app/target/classes:/app/target/dependency/*' \"$MAIN_CLASS\""]

@@ -1,0 +1,6 @@
+package com.project.scheduler.common.event;
+
+public enum JobEventType {
+	JOB_CREATED, JOB_UPDATED, JOB_DELETED, JOB_RUN_REQUESTED, JOB_RETRY_REQUESTED, JOB_CANCEL_REQUESTED,
+	JOB_DEAD_LETTERED
+}

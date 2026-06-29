@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Distributed Job Scheduler - Dashboard</title>
+  <!-- Google Fonts - Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css">
+  <!-- FontAwesome Icons (loaded via public CDN for rich visual elements) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo">
+        <i class="fa-solid fa-network-wired logo-icon"></i>
+        <h1>Distributed Job Scheduler</h1>
+        <span class="badge badge-success">V1.0</span>
+      </div>
+      <div class="header-actions">
+        <button id="btn-settings" class="btn btn-secondary" title="Configure API Endpoint">
+          <i class="fa-solid fa-cog"></i> Configure
+        </button>
+        <button id="btn-refresh" class="btn btn-secondary" title="Force Refresh">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+        <button id="btn-new-job" class="btn btn-primary">
+          <i class="fa-solid fa-plus"></i> Create Job
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-container">
+    <!-- Dashboard Stats Summary -->
+    <section class="stats-grid">
+      <div class="stat-card card-total">
+        <div class="stat-icon"><i class="fa-solid fa-list-check"></i></div>
+        <div class="stat-info">
+          <h3>Total Jobs</h3>
+          <p id="stat-total">0</p>
+        </div>
+      </div>
+      <div class="stat-card card-running">
+        <div class="stat-icon"><i class="fa-solid fa-circle-play"></i></div>
+        <div class="stat-info">
+          <h3>Running</h3>
+          <p id="stat-running">0</p>
+        </div>
+      </div>
+      <div class="stat-card card-paused">
+        <div class="stat-icon"><i class="fa-solid fa-circle-pause"></i></div>
+        <div class="stat-info">
+          <h3>Paused</h3>
+          <p id="stat-paused">0</p>
+        </div>
+      </div>
+      <div class="stat-card card-failed">
+        <div class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+        <div class="stat-info">
+          <h3>Failed / Dead</h3>
+          <p id="stat-failed">0</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters and Search -->
+    <section class="filter-panel">
+      <div class="search-bar">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="search-input" placeholder="Search by job name, description, ID...">
+      </div>
+      <div class="filter-selectors">
+        <label for="status-filter">Status:</label>
+        <select id="status-filter">
+          <option value="ALL">All Statuses</option>
+          <option value="CREATED">Created</option>
+          <option value="SCHEDULED">Scheduled</option>
+          <option value="RUNNING">Running</option>
+          <option value="PAUSED">Paused</option>
+          <option value="CANCELLED">Cancelled</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="FAILED">Failed</option>
+          <option value="DEAD">Dead</option>
+        </select>
+        
+        <label for="type-filter">Type:</label>
+        <select id="type-filter">
+          <option value="ALL">All Types</option>
+          <option value="ONE_TIME">One Time</option>
+          <option value="CRON">Cron</option>
+          <option value="FIXED_RATE">Fixed Rate</option>
+          <option value="FIXED_DELAY">Fixed Delay</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Active Jobs Table Section -->
+    <section class="jobs-table-container">
+      <div class="table-header">
+        <h2>Registered Jobs</h2>
+        <span class="refresh-indicator" id="refresh-indicator">Auto-refreshing in 5s...</span>
+      </div>
+      <div class="table-wrapper">
+        <table class="jobs-table" id="jobs-table">
+          <thead>
+            <tr>
+              <th>Job Information</th>
+              <th>Type &amp; Schedule</th>
+              <th>Priority</th>
+              <th>Status</th>
+              <th>Executions</th>
+              <th>Timeline</th>
+              <th class="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="jobs-tbody">
+            <tr>
+              <td colspan="7" class="loading-state">
+                <i class="fa-solid fa-spinner fa-spin"></i> Loading jobs...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Distributed Job Scheduler Engine. Connected to: <span id="connected-endpoint">Detecting...</span></p>
+  </footer>
+
+  <!-- Modal: Job Create/Edit Form -->
+  <div id="modal-job-form" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="job-form-title">Create New Job</h2>
+        <button class="close-modal-btn" data-target="modal-job-form">&times;</button>
+      </div>
+      <form id="job-form">
+        <div class="modal-body">
+          <input type="hidden" id="form-job-id">
+          <div class="form-grid">
+            <div class="form-group col-12">
+              <label for="job-name">Job Name <span class="required">*</span></label>
+              <input type="text" id="job-name" required placeholder="e.g., send-welcome-email">
+            </div>
+            <div class="form-group col-12">
+              <label for="job-description">Description</label>
+              <input type="text" id="job-description" placeholder="Short description of the job's purpose">
+            </div>
+            <div class="form-group col-6">
+              <label for="job-schedule-type">Schedule Type</label>
+              <select id="job-schedule-type" required>
+                <option value="ONE_TIME">One Time</option>
+                <option value="CRON">Cron Expression</option>
+                <option value="FIXED_RATE">Fixed Rate Interval</option>
+                <option value="FIXED_DELAY">Fixed Delay Interval</option>
+              </select>
+            </div>
+            <div class="form-group col-6" id="field-cron-container" style="display: none;">
+              <label for="job-cron-expression">Cron Expression / Interval <span class="required">*</span></label>
+              <input type="text" id="job-cron-expression" placeholder="e.g., */5 * * * * or PT30S or 30">
+              <span class="field-help" id="field-cron-help">5-field expression or interval in seconds.</span>
+            </div>
+            <div class="form-group col-6">
+              <label for="job-priority">Priority (1-10)</label>
+              <input type="number" id="job-priority" min="1" max="10" value="5">
+            </div>
+            <div class="form-group col-6">
+              <label for="job-max-retries">Max Retries</label>
+              <input type="number" id="job-max-retries" min="0" max="20" value="3">
+            </div>
+            <div class="form-group col-12" id="field-execution-time-container">
+              <label for="job-execution-time">Next Execution Time (UTC) <span class="required">*</span></label>
+              <div class="time-input-row">
+                <input type="datetime-local" id="job-execution-time">
+                <button type="button" class="btn btn-secondary btn-small" id="btn-set-now">Set to Now</button>
+              </div>
+            </div>
+            <div class="form-group col-12">
+              <label for="job-payload">Payload (JSON string) <span class="required">*</span></label>
+              <textarea id="job-payload" rows="4" required placeholder='{"type": "http", "url": "https://api.example.com/webhook", "method": "POST"}'></textarea>
+              <span class="validation-error-msg" id="payload-error"></span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary close-modal-btn" data-target="modal-job-form">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="btn-submit-job">Save Job</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Job History / Execution List -->
+  <div id="modal-history" class="modal modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="history-title">Execution History: <span id="history-job-name">...</span></h2>
+        <button class="close-modal-btn" data-target="modal-history">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="job-meta-details card">
+          <div class="detail-row"><strong>Job ID:</strong> <span id="detail-job-id" class="code-text"></span></div>
+          <div class="detail-row"><strong>Schedule:</strong> <span id="detail-schedule"></span></div>
+          <div class="detail-row"><strong>Payload:</strong> <pre id="detail-payload" class="code-block"></pre></div>
+        </div>
+
+        <h3 class="section-subtitle">Execution Logs</h3>
+        <div class="table-wrapper">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Execution ID</th>
+                <th>Status</th>
+                <th>Run Timeline</th>
+                <th>Executor Info</th>
+                <th>Retries</th>
+                <th>Error Message / Log</th>
+              </tr>
+            </thead>
+            <tbody id="history-tbody">
+              <tr>
+                <td colspan="6" class="loading-state">Select a job to view executions.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary close-modal-btn" data-target="modal-history">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuration / Settings -->
+  <div id="modal-settings" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Backend Configuration</h2>
+        <button class="close-modal-btn" data-target="modal-settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group col-12">
+          <label for="settings-api-url">Scheduler API Endpoint URL</label>
+          <input type="url" id="settings-api-url" required placeholder="e.g. http://localhost:8080">
+          <span class="field-help">Endpoint of the running `api-server` JVM microservice. Leave blank to auto-detect from the browser origin.</span>
+        </div>
+        <div class="form-group col-12">
+          <label for="settings-refresh-rate">Auto-Refresh Interval (seconds)</label>
+          <input type="number" id="settings-refresh-rate" min="0" max="120" value="5">
+          <span class="field-help">Dashboard refresh rate. Enter 0 to disable auto-refresh.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary close-modal-btn" data-target="modal-settings">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-save-settings">Save Configuration</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Javascript File -->
+  <script src="app.js"></script>
+</body>
+</html>
