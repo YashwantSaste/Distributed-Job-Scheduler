@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: api-server
+    env: docker
+
+    dockerfilePath: docker/Dockerfile.jvm
+    dockerContext: .
+
+    dockerBuildArgs:
+      MODULE: api-server
+      MAIN_CLASS: com.project.scheduler.api.ApiServerApplication
+
+    envVars:
+      - key: HTTP_PORT
+        value: 8080
