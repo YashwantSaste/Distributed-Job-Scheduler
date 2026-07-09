@@ -1,15 +1,84 @@
+databases:
+  - name: scheduler-db
+    databaseName: scheduler
+    user: scheduler
+
+envGroups:
+  - name: shared-config
+    envVars:
+      - key: DB_URL
+        fromDatabase:
+          name: scheduler-db
+          property: connectionString
+      - key: DB_USERNAME
+        fromDatabase:
+          name: scheduler-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: scheduler-db
+          property: password
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: scheduler-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: scheduler-redis
+          property: port
+      - key: KAFKA_BOOTSTRAP_SERVERS
+        sync: false
+
 services:
+  - type: redis
+    name: scheduler-redis
+    ipAllowList: []
+
   - type: web
     name: api-server
     env: docker
-
     dockerfilePath: docker/Dockerfile.jvm
     dockerContext: .
-
     dockerBuildArgs:
       MODULE: api-server
       MAIN_CLASS: com.project.scheduler.api.ApiServerApplication
-
     envVars:
       - key: HTTP_PORT
         value: 8080
+    envGroups:
+      - shared-config
+
+  - type: worker
+    name: consumer-service
+    env: docker
+    dockerfilePath: docker/Dockerfile.jvm
+    dockerContext: .
+    dockerBuildArgs:
+      MODULE: consumer-service
+      MAIN_CLASS: com.project.scheduler.consumer.ConsumerApplication
+    envGroups:
+      - shared-config
+
+  - type: worker
+    name: executor-service
+    env: docker
+    dockerfilePath: docker/Dockerfile.jvm
+    dockerContext: .
+    dockerBuildArgs:
+      MODULE: executor-service
+      MAIN_CLASS: com.project.scheduler.executor.ExecutorApplication
+    envGroups:
+      - shared-config
+
+  - type: worker
+    name: watcher-service
+    env: docker
+    dockerfilePath: docker/Dockerfile.jvm
+    dockerContext: .
+    dockerBuildArgs:
+      MODULE: watcher-service
+      MAIN_CLASS: com.project.scheduler.watcher.WatcherApplication
+    envGroups:
+      - shared-config
