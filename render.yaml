@@ -29,7 +29,10 @@ envGroups:
           name: scheduler-redis
           property: port
       - key: KAFKA_BOOTSTRAP_SERVERS
-        value: scheduler-kafka:9092
+        fromService:
+          type: pserv
+          name: scheduler-kafka
+          property: hostport
 
 services:
   - type: pserv
@@ -42,11 +45,9 @@ services:
       - key: KAFKA_CFG_PROCESS_ROLES
         value: broker,controller
       - key: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-        value: 0@scheduler-kafka:9093
+        value: 0@127.0.0.1:9093
       - key: KAFKA_CFG_LISTENERS
-        value: PLAINTEXT://:9092,CONTROLLER://:9093
-      - key: KAFKA_CFG_ADVERTISED_LISTENERS
-        value: PLAINTEXT://scheduler-kafka:9092
+        value: PLAINTEXT://0.0.0.0:9092,CONTROLLER://127.0.0.1:9093
       - key: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
         value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - key: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
