@@ -40,20 +40,24 @@ services:
     env: docker
     image: bitnami/kafka:3.7.0
     envVars:
+      - key: KAFKA_ENABLE_KRAFT
+        value: "yes"
       - key: KAFKA_CFG_NODE_ID
-        value: 0
+        value: "1"
       - key: KAFKA_CFG_PROCESS_ROLES
         value: broker,controller
       - key: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
-        value: 0@127.0.0.1:9093
+        value: 1@127.0.0.1:9093
       - key: KAFKA_CFG_LISTENERS
         value: PLAINTEXT://0.0.0.0:9092,CONTROLLER://127.0.0.1:9093
+      - key: KAFKA_CFG_ADVERTISED_LISTENERS
+        value: PLAINTEXT://scheduler-kafka:9092
       - key: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
         value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
       - key: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
         value: CONTROLLER
       - key: ALLOW_PLAINTEXT_LISTENER
-        value: yes
+        value: "yes"
     disk:
       name: kafka-data
       mountPath: /bitnami/kafka
