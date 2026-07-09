@@ -29,9 +29,35 @@ envGroups:
           name: scheduler-redis
           property: port
       - key: KAFKA_BOOTSTRAP_SERVERS
-        sync: false
+        value: scheduler-kafka:9092
 
 services:
+  - type: pserv
+    name: scheduler-kafka
+    env: docker
+    image: bitnami/kafka:3.7.0
+    envVars:
+      - key: KAFKA_CFG_NODE_ID
+        value: 0
+      - key: KAFKA_CFG_PROCESS_ROLES
+        value: broker,controller
+      - key: KAFKA_CFG_CONTROLLER_QUORUM_VOTERS
+        value: 0@scheduler-kafka:9093
+      - key: KAFKA_CFG_LISTENERS
+        value: PLAINTEXT://:9092,CONTROLLER://:9093
+      - key: KAFKA_CFG_ADVERTISED_LISTENERS
+        value: PLAINTEXT://scheduler-kafka:9092
+      - key: KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP
+        value: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - key: KAFKA_CFG_CONTROLLER_LISTENER_NAMES
+        value: CONTROLLER
+      - key: ALLOW_PLAINTEXT_LISTENER
+        value: yes
+    disk:
+      name: kafka-data
+      mountPath: /bitnami/kafka
+      sizeGB: 1
+
   - type: redis
     name: scheduler-redis
     ipAllowList: []
