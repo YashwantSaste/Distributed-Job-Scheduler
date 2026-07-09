@@ -78,8 +78,10 @@ services:
       MODULE: api-server
       MAIN_CLASS: com.project.scheduler.api.ApiServerApplication
     envVars:
+      - key: PORT
+        value: "8080"
       - key: HTTP_PORT
-        value: 8080
+        value: "8080"
     envGroups:
       - shared-config
 
