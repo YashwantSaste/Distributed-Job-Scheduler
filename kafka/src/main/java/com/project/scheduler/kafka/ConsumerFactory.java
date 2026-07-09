@@ -27,6 +27,14 @@ public final class ConsumerFactory {
 		properties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 		properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,
 				config.get("kafka.consumer.auto-offset-reset", "earliest"));
+
+		String securityProtocol = config.get("kafka.security.protocol", null);
+		if (securityProtocol != null) {
+			properties.put("security.protocol", securityProtocol);
+			properties.put("sasl.mechanism", config.get("kafka.sasl.mechanism", "PLAIN"));
+			properties.put("sasl.jaas.config", config.get("kafka.sasl.jaas.config", ""));
+		}
+
 		return new KafkaConsumer<>(properties);
 	}
 }

@@ -26,6 +26,14 @@ public final class ProducerFactory {
 		properties.put(ProducerConfig.ACKS_CONFIG, config.get("kafka.producer.acks", "all"));
 		properties.put(ProducerConfig.RETRIES_CONFIG, config.getInt("kafka.producer.retries", 3));
 		properties.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, config.getBoolean("kafka.producer.idempotence", true));
+
+		String securityProtocol = config.get("kafka.security.protocol", null);
+		if (securityProtocol != null) {
+			properties.put("security.protocol", securityProtocol);
+			properties.put("sasl.mechanism", config.get("kafka.sasl.mechanism", "PLAIN"));
+			properties.put("sasl.jaas.config", config.get("kafka.sasl.jaas.config", ""));
+		}
+
 		return new KafkaProducer<>(properties);
 	}
 }
