@@ -28,9 +28,14 @@ public final class Router implements HttpHandler {
 		log.info("HTTP {} {}", httpMethod, requestPath);
 		if ("OPTIONS".equalsIgnoreCase(httpMethod)) {
 			exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-			exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+			exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, HEAD");
 			exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 			exchange.sendResponseHeaders(204, -1);
+			exchange.close();
+			return;
+		}
+		if ("HEAD".equalsIgnoreCase(httpMethod)) {
+			exchange.sendResponseHeaders(200, -1);
 			exchange.close();
 			return;
 		}
