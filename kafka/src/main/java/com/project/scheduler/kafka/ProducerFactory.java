@@ -34,6 +34,18 @@ public final class ProducerFactory {
 			properties.put("sasl.jaas.config", config.get("kafka.sasl.jaas.config", ""));
 		}
 
-		return new KafkaProducer<>(properties);
+		while (true) {
+			try {
+				return new KafkaProducer<>(properties);
+			} catch (Exception e) {
+				System.err.println("Kafka Producer initialization failed (waiting for broker): " + e.getMessage());
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					throw new RuntimeException(ie);
+				}
+			}
+		}
 	}
 }

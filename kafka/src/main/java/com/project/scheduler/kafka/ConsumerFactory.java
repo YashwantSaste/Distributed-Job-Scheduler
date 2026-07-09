@@ -35,6 +35,18 @@ public final class ConsumerFactory {
 			properties.put("sasl.jaas.config", config.get("kafka.sasl.jaas.config", ""));
 		}
 
-		return new KafkaConsumer<>(properties);
+		while (true) {
+			try {
+				return new KafkaConsumer<>(properties);
+			} catch (Exception e) {
+				System.err.println("Kafka Consumer initialization failed (waiting for broker): " + e.getMessage());
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					throw new RuntimeException(ie);
+				}
+			}
+		}
 	}
 }
