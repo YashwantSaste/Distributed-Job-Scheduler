@@ -1,5 +1,21 @@
 # Distributed Job Scheduler
 
+## 🚀 Running Locally
+
+Follow the complete setup guide:
+
+👉 **[LOCAL_SETUP.md](LOCAL_SETUP.md)**
+
+The guide includes:
+
+- Prerequisites
+- Docker setup
+- Infrastructure services
+- Building the project
+- Running all microservices
+- Troubleshooting
+
+
 ## High-Level Architecture
 
 The high-level architecture provides an overview of the distributed job scheduler and its core components. Client requests are routed through the API Gateway to the Job Service, which manages job creation, updates, and cancellations. Scheduled jobs are persisted in PostgreSQL, while the Scheduler identifies jobs ready for execution and dispatches them through Kafka. Multiple Executor Services consume these jobs, execute them independently, and update the execution status, enabling a scalable, fault-tolerant, and horizontally scalable scheduling system.
